@@ -14,9 +14,10 @@ st.set_page_config(
 )
 
 NUM_CLASSES = 12
-MODEL_PATH = "convnextv2_hyperkvasir.pth"
+MODEL_PATH = "model/convnextv2_hyperkvasir.pth"
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# STREAMLIT CLOUD = CPU ONLY
+device = torch.device("cpu")
 
 # =========================================================
 # LOAD MODEL (CACHE)
@@ -29,10 +30,9 @@ def load_model():
         num_classes=NUM_CLASSES
     )
 
-    state_dict = torch.load(MODEL_PATH, map_location=device)
-    model.load_state_dict(state_dict)
+    state_dict = torch.load(MODEL_PATH, map_location="cpu")
+    model.load_state_dict(state_dict, strict=False)
 
-    model.to(device)
     model.eval()
     return model
 
@@ -65,7 +65,7 @@ inference_transform = transforms.Compose([
 ])
 
 # =========================================================
-# CLASS NAMES (URUTAN HARUS SAMA DENGAN TRAINING)
+# CLASS NAMES (HARUS SAMA DENGAN TRAINING)
 # =========================================================
 class_names = [
     "bbps-0-1",
@@ -102,7 +102,7 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
-    input_tensor = inference_transform(image).unsqueeze(0).to(device)
+    input_tensor = inference_transform(image).unsqueeze(0)
 
     with torch.no_grad():
         outputs = model(input_tensor)
