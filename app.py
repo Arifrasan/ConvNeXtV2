@@ -25,10 +25,11 @@ device = torch.device("cpu")
 @st.cache_resource
 def load_model():
     model = timm.create_model(
-        "convnextv2_tiny",
-        pretrained=False,
-        num_classes=NUM_CLASSES
-    )
+    "convnextv2_tiny",
+    pretrained=False,
+    num_classes=NUM_CLASSES
+)
+
 
     state_dict = torch.load(MODEL_PATH, map_location="cpu")
     model.load_state_dict(state_dict, strict=False)
