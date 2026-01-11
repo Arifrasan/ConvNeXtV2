@@ -25,15 +25,13 @@ device = torch.device("cpu")
 @st.cache_resource
 def load_model():
     model = timm.create_model(
-    "convnextv2_tiny",
-    pretrained=False,
-    num_classes=NUM_CLASSES
-)
-
+        "convnextv2_tiny",
+        pretrained=False,
+        num_classes=NUM_CLASSES
+    )
 
     state_dict = torch.load(MODEL_PATH, map_location="cpu")
     model.load_state_dict(state_dict, strict=False)
-
     model.eval()
     return model
 
@@ -41,7 +39,7 @@ def load_model():
 # =========================================================
 # LOAD MODEL
 # =========================================================
-st.title("Klasifikasi citra endoskopi")
+st.title("Klasifikasi Citra Endoskopi Gastrointestinal")
 
 try:
     model = load_model()
@@ -66,7 +64,7 @@ inference_transform = transforms.Compose([
 ])
 
 # =========================================================
-# CLASS NAMES (HARUS SAMA DENGAN TRAINING)
+# CLASS NAMES
 # =========================================================
 class_names = [
     "bbps-0-1",
@@ -82,6 +80,61 @@ class_names = [
     "ulcerative-colitis",
     "z-line"
 ]
+
+# =========================================================
+# CLASS DESCRIPTIONS
+# =========================================================
+class_descriptions = {
+    "bbps-0-1": (
+        "Skor Boston Bowel Preparation Scale (BBPS) 0–1 menunjukkan "
+        "persiapan usus yang buruk, sehingga visualisasi mukosa kolon "
+        "tidak optimal."
+    ),
+    "bbps-2-3": (
+        "Skor BBPS 2–3 menunjukkan persiapan usus yang adekuat hingga baik, "
+        "memungkinkan visualisasi mukosa kolon dengan jelas."
+    ),
+    "cecum": (
+        "Cecum merupakan bagian awal usus besar dan menjadi landmark penting "
+        "untuk memastikan kolonoskopi telah mencapai area maksimal."
+    ),
+    "dyed-lifted-polyps": (
+        "Polip yang telah diwarnai dan diangkat menggunakan teknik injeksi "
+        "submukosa untuk membantu reseksi yang aman."
+    ),
+    "dyed-resection-margins": (
+        "Area tepi reseksi yang diwarnai untuk mengevaluasi batas jaringan "
+        "dan memastikan lesi telah diangkat sepenuhnya."
+    ),
+    "esophagitis": (
+        "Esofagitis adalah peradangan pada mukosa esofagus, sering kali "
+        "disebabkan oleh refluks asam lambung."
+    ),
+    "polyps": (
+        "Polip merupakan pertumbuhan jaringan abnormal pada mukosa saluran "
+        "cerna yang berpotensi menjadi ganas."
+    ),
+    "pylorus": (
+        "Pilorus adalah bagian distal lambung yang menghubungkan lambung "
+        "dengan duodenum dan mengatur pengosongan lambung."
+    ),
+    "retroflex-rectum": (
+        "Tampilan retrofleksi pada rektum digunakan untuk mendeteksi lesi "
+        "yang sulit terlihat pada pandangan standar."
+    ),
+    "retroflex-stomach": (
+        "Tampilan retrofleksi pada lambung membantu visualisasi area "
+        "fundus dan kardia."
+    ),
+    "ulcerative-colitis": (
+        "Ulcerative colitis merupakan penyakit inflamasi usus kronis "
+        "yang ditandai peradangan dan ulserasi pada kolon."
+    ),
+    "z-line": (
+        "Z-line adalah batas antara epitel esofagus dan lambung, "
+        "penting dalam evaluasi GERD."
+    ),
+}
 
 # =========================================================
 # UI UPLOAD & PREDICTION
@@ -112,15 +165,27 @@ if uploaded_file is not None:
 
     predicted_class = class_names[predicted_idx.item()]
 
+    # =====================================================
+    # RESULT
+    # =====================================================
     st.markdown("---")
     st.subheader("🩺 Hasil Prediksi")
 
     st.success(f"**Diagnosis:** {predicted_class}")
     st.info(f"**Confidence:** {confidence.item() * 100:.2f}%")
 
-    # ===============================
+    # =====================================================
+    # CLASS EXPLANATION
+    # =====================================================
+    st.markdown("### 📚 Penjelasan Kelas")
+    st.write(class_descriptions.get(
+        predicted_class,
+        "Tidak tersedia penjelasan untuk kelas ini."
+    ))
+
+    # =====================================================
     # TOP-3 PROBABILITIES
-    # ===============================
+    # =====================================================
     st.markdown("### 🔝 Top-3 Prediksi")
     top_probs, top_idxs = torch.topk(probabilities, 3)
 
@@ -130,8 +195,18 @@ if uploaded_file is not None:
             f"({top_probs[0][i].item() * 100:.2f}%)"
         )
 
+    # =====================================================
+    # DISCLAIMER
+    # =====================================================
+    st.warning(
+        "⚠️ Hasil ini merupakan sistem pendukung berbasis kecerdasan buatan "
+        "dan **tidak menggantikan diagnosis klinis oleh dokter spesialis**."
+    )
+
 # =========================================================
 # FOOTER
 # =========================================================
 st.markdown("---")
-st.caption("ConvNeXtV2 – HyperKvasir | Klasifikasi citra endoskopi gastrointestinal")
+st.caption(
+    "ConvNeXtV2 – HyperKvasir | Klasifikasi citra endoskopi gastrointestinal"
+)
