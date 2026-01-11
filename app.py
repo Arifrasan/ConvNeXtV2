@@ -41,7 +41,7 @@ def load_model():
 # =========================================================
 # LOAD MODEL
 # =========================================================
-st.title("ConvNeXtV2 – HyperKvasir")
+st.title("Klasifikasi citra endoskopi")
 
 try:
     model = load_model()
@@ -134,4 +134,4 @@ if uploaded_file is not None:
 # FOOTER
 # =========================================================
 st.markdown("---")
-st.caption("ConvNeXtV2 – HyperKvasir | Skripsi Deep Learning Medis")
+st.caption("ConvNeXtV2 – HyperKvasir | Klasifikasi citra endoskopi gastrointestinal")
