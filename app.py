@@ -154,16 +154,8 @@ if uploaded_file is not None:
 
     else:
 
-        st.error("❌ Tidak dapat memberikan hasil prediksi.")
+        st.error("❌ Sistem tidak dapat memberikan hasil prediksi. Gambar yang diupload kurang jelas, atau sistem tidak dapat mengidentifikasi citra karena berada di luar domain pelatihan model.")
 
-        st.markdown("### ⚠️ Alasan")
-        st.write(
-            "Model tidak memiliki tingkat keyakinan yang cukup tinggi "
-            "untuk menetapkan satu kelas tertentu. "
-            "Hal ini dapat terjadi karena kualitas gambar kurang baik, "
-            "pencahayaan tidak optimal, atau pola citra tidak cukup jelas "
-            "berdasarkan data pelatihan model."
-        )
 
         st.markdown("### 🔍 Rekomendasi")
         st.write(
