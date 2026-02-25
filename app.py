@@ -107,7 +107,7 @@ st.markdown("## 📤 Upload Gambar Endoskopi")
 
 uploaded_file = st.file_uploader(
     "Upload gambar (JPG / PNG)",
-    type=["jpg", "jpeg", "png"]
+    type=["jpg", "jpeg", "png", "jfif"]
 )
 
 if uploaded_file is not None:
