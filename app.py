@@ -15,9 +15,9 @@ st.set_page_config(
 
 NUM_CLASSES = 12
 MODEL_PATH = "model/convnextv2_hyperkvasir.pth"
+CONFIDENCE_THRESHOLD = 0.60  # 60% threshold
 
-# STREAMLIT CLOUD = CPU ONLY
-device = torch.device("cpu")
+device = torch.device("cpu")  # Streamlit Cloud CPU only
 
 # =========================================================
 # LOAD MODEL (CACHE)
@@ -37,7 +37,7 @@ def load_model():
 
 
 # =========================================================
-# LOAD MODEL
+# TITLE
 # =========================================================
 st.title("Klasifikasi Citra Endoskopi Gastrointestinal")
 
@@ -52,7 +52,7 @@ except Exception as e:
     st.stop()
 
 # =========================================================
-# INFERENCE TRANSFORM
+# TRANSFORM
 # =========================================================
 inference_transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -85,59 +85,22 @@ class_names = [
 # CLASS DESCRIPTIONS
 # =========================================================
 class_descriptions = {
-    "bbps-0-1": (
-        "Skor Boston Bowel Preparation Scale (BBPS) 0–1 menunjukkan "
-        "persiapan usus yang buruk, sehingga visualisasi mukosa kolon "
-        "tidak optimal."
-    ),
-    "bbps-2-3": (
-        "Skor BBPS 2–3 menunjukkan persiapan usus yang adekuat hingga baik, "
-        "memungkinkan visualisasi mukosa kolon dengan jelas."
-    ),
-    "cecum": (
-        "Cecum merupakan bagian awal usus besar dan menjadi landmark penting "
-        "untuk memastikan kolonoskopi telah mencapai area maksimal."
-    ),
-    "dyed-lifted-polyps": (
-        "Polip yang telah diwarnai dan diangkat menggunakan teknik injeksi "
-        "submukosa untuk membantu reseksi yang aman."
-    ),
-    "dyed-resection-margins": (
-        "Area tepi reseksi yang diwarnai untuk mengevaluasi batas jaringan "
-        "dan memastikan lesi telah diangkat sepenuhnya."
-    ),
-    "esophagitis": (
-        "Esofagitis adalah peradangan pada mukosa esofagus, sering kali "
-        "disebabkan oleh refluks asam lambung."
-    ),
-    "polyps": (
-        "Polip merupakan pertumbuhan jaringan abnormal pada mukosa saluran "
-        "cerna yang berpotensi menjadi ganas."
-    ),
-    "pylorus": (
-        "Pilorus adalah bagian distal lambung yang menghubungkan lambung "
-        "dengan duodenum dan mengatur pengosongan lambung."
-    ),
-    "retroflex-rectum": (
-        "Tampilan retrofleksi pada rektum digunakan untuk mendeteksi lesi "
-        "yang sulit terlihat pada pandangan standar."
-    ),
-    "retroflex-stomach": (
-        "Tampilan retrofleksi pada lambung membantu visualisasi area "
-        "fundus dan kardia."
-    ),
-    "ulcerative-colitis": (
-        "Ulcerative colitis merupakan penyakit inflamasi usus kronis "
-        "yang ditandai peradangan dan ulserasi pada kolon."
-    ),
-    "z-line": (
-        "Z-line adalah batas antara epitel esofagus dan lambung, "
-        "penting dalam evaluasi GERD."
-    ),
+    "bbps-0-1": "Skor BBPS 0–1 menunjukkan persiapan usus yang buruk sehingga visualisasi mukosa kolon tidak optimal.",
+    "bbps-2-3": "Skor BBPS 2–3 menunjukkan persiapan usus yang adekuat hingga baik dengan visualisasi mukosa yang jelas.",
+    "cecum": "Cecum adalah bagian awal usus besar dan menjadi landmark penting dalam kolonoskopi.",
+    "dyed-lifted-polyps": "Polip yang diwarnai dan diangkat menggunakan teknik injeksi submukosa.",
+    "dyed-resection-margins": "Area tepi reseksi yang diwarnai untuk memastikan batas jaringan telah diangkat.",
+    "esophagitis": "Peradangan pada mukosa esofagus yang sering disebabkan oleh refluks asam lambung.",
+    "polyps": "Pertumbuhan jaringan abnormal pada mukosa saluran cerna yang berpotensi berkembang menjadi kanker.",
+    "pylorus": "Bagian distal lambung yang menghubungkan lambung dengan duodenum.",
+    "retroflex-rectum": "Tampilan retrofleksi rektum untuk mendeteksi lesi tersembunyi.",
+    "retroflex-stomach": "Tampilan retrofleksi lambung untuk melihat area fundus dan kardia.",
+    "ulcerative-colitis": "Penyakit inflamasi usus kronis yang ditandai peradangan dan ulserasi pada kolon.",
+    "z-line": "Batas antara epitel esofagus dan lambung yang penting dalam evaluasi GERD."
 }
 
 # =========================================================
-# UI UPLOAD & PREDICTION
+# UPLOAD UI
 # =========================================================
 st.markdown("---")
 st.markdown("## 📤 Upload Gambar Endoskopi")
@@ -148,13 +111,9 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
 
-    st.image(
-        image,
-        caption="Gambar Input",
-        use_container_width=True
-    )
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Gambar Input", use_container_width=True)
 
     input_tensor = inference_transform(image).unsqueeze(0)
 
@@ -164,6 +123,7 @@ if uploaded_file is not None:
         confidence, predicted_idx = torch.max(probabilities, dim=1)
 
     predicted_class = class_names[predicted_idx.item()]
+    confidence_score = confidence.item()
 
     # =====================================================
     # RESULT
@@ -171,22 +131,34 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader("🩺 Hasil Prediksi")
 
-    st.success(f"**Diagnosis:** {predicted_class}")
-    st.info(f"**Confidence:** {confidence.item() * 100:.2f}%")
+    if confidence_score >= CONFIDENCE_THRESHOLD:
+
+        st.success(f"**Diagnosis:** {predicted_class}")
+        st.info(f"Confidence: {confidence_score * 100:.2f}%")
+
+        st.markdown("### 📚 Penjelasan Kelas")
+        st.write(class_descriptions.get(
+            predicted_class,
+            "Tidak tersedia penjelasan."
+        ))
+
+    else:
+
+        st.warning("⚠️ Model memiliki tingkat keyakinan rendah.")
+        st.error(f"Prediksi sementara: {predicted_class}")
+        st.info(f"Confidence rendah: {confidence_score * 100:.2f}%")
+
+        st.markdown("### 🔍 Rekomendasi")
+        st.write(
+            "Hasil prediksi tidak cukup meyakinkan. "
+            "Disarankan untuk evaluasi lanjutan oleh dokter spesialis."
+        )
 
     # =====================================================
-    # CLASS EXPLANATION
-    # =====================================================
-    st.markdown("### 📚 Penjelasan Kelas")
-    st.write(class_descriptions.get(
-        predicted_class,
-        "Tidak tersedia penjelasan untuk kelas ini."
-    ))
-
-    # =====================================================
-    # TOP-3 PROBABILITIES
+    # TOP 3
     # =====================================================
     st.markdown("### 🔝 Top-3 Prediksi")
+
     top_probs, top_idxs = torch.topk(probabilities, 3)
 
     for i in range(3):
@@ -199,8 +171,8 @@ if uploaded_file is not None:
     # DISCLAIMER
     # =====================================================
     st.warning(
-        "⚠️ Hasil ini merupakan sistem pendukung berbasis kecerdasan buatan "
-        "dan **tidak menggantikan diagnosis klinis oleh dokter spesialis**."
+        "⚠️ Sistem ini merupakan alat bantu berbasis kecerdasan buatan "
+        "dan tidak menggantikan diagnosis klinis oleh tenaga medis profesional."
     )
 
 # =========================================================
@@ -208,5 +180,5 @@ if uploaded_file is not None:
 # =========================================================
 st.markdown("---")
 st.caption(
-    "ConvNeXtV2 – HyperKvasir | Klasifikasi citra endoskopi gastrointestinal"
+    "ConvNeXtV2 – HyperKvasir | Sistem Klasifikasi Citra Endoskopi Gastrointestinal"
 )
