@@ -15,9 +15,9 @@ st.set_page_config(
 
 NUM_CLASSES = 12
 MODEL_PATH = "model/convnextv2_hyperkvasir.pth"
-CONFIDENCE_THRESHOLD = 0.60  # 60% threshold
+CONFIDENCE_THRESHOLD = 0.60  # 60%
 
-device = torch.device("cpu")  # Streamlit Cloud CPU only
+device = torch.device("cpu")
 
 # =========================================================
 # LOAD MODEL (CACHE)
@@ -85,18 +85,18 @@ class_names = [
 # CLASS DESCRIPTIONS
 # =========================================================
 class_descriptions = {
-    "bbps-0-1": "Skor BBPS 0–1 menunjukkan persiapan usus yang buruk sehingga visualisasi mukosa kolon tidak optimal.",
-    "bbps-2-3": "Skor BBPS 2–3 menunjukkan persiapan usus yang adekuat hingga baik dengan visualisasi mukosa yang jelas.",
-    "cecum": "Cecum adalah bagian awal usus besar dan menjadi landmark penting dalam kolonoskopi.",
-    "dyed-lifted-polyps": "Polip yang diwarnai dan diangkat menggunakan teknik injeksi submukosa.",
-    "dyed-resection-margins": "Area tepi reseksi yang diwarnai untuk memastikan batas jaringan telah diangkat.",
-    "esophagitis": "Peradangan pada mukosa esofagus yang sering disebabkan oleh refluks asam lambung.",
-    "polyps": "Pertumbuhan jaringan abnormal pada mukosa saluran cerna yang berpotensi berkembang menjadi kanker.",
-    "pylorus": "Bagian distal lambung yang menghubungkan lambung dengan duodenum.",
-    "retroflex-rectum": "Tampilan retrofleksi rektum untuk mendeteksi lesi tersembunyi.",
-    "retroflex-stomach": "Tampilan retrofleksi lambung untuk melihat area fundus dan kardia.",
-    "ulcerative-colitis": "Penyakit inflamasi usus kronis yang ditandai peradangan dan ulserasi pada kolon.",
-    "z-line": "Batas antara epitel esofagus dan lambung yang penting dalam evaluasi GERD."
+    "bbps-0-1": "Skor BBPS 0–1 menunjukkan persiapan usus yang buruk.",
+    "bbps-2-3": "Skor BBPS 2–3 menunjukkan persiapan usus yang adekuat.",
+    "cecum": "Cecum adalah bagian awal usus besar.",
+    "dyed-lifted-polyps": "Polip yang diwarnai dan diangkat.",
+    "dyed-resection-margins": "Area tepi reseksi yang diwarnai.",
+    "esophagitis": "Peradangan pada mukosa esofagus.",
+    "polyps": "Pertumbuhan jaringan abnormal pada mukosa.",
+    "pylorus": "Bagian distal lambung menuju duodenum.",
+    "retroflex-rectum": "Tampilan retrofleksi pada rektum.",
+    "retroflex-stomach": "Tampilan retrofleksi pada lambung.",
+    "ulcerative-colitis": "Penyakit inflamasi usus kronis.",
+    "z-line": "Batas antara esofagus dan lambung."
 }
 
 # =========================================================
@@ -125,12 +125,12 @@ if uploaded_file is not None:
     predicted_class = class_names[predicted_idx.item()]
     confidence_score = confidence.item()
 
-    # =====================================================
-    # RESULT
-    # =====================================================
     st.markdown("---")
-    st.subheader("🩺 Hasil Prediksi")
+    st.subheader("🩺 Hasil Analisis")
 
+    # =====================================================
+    # STRICT LOW CONFIDENCE HANDLING
+    # =====================================================
     if confidence_score >= CONFIDENCE_THRESHOLD:
 
         st.success(f"**Diagnosis:** {predicted_class}")
@@ -142,29 +142,33 @@ if uploaded_file is not None:
             "Tidak tersedia penjelasan."
         ))
 
+        # TOP-3 hanya tampil jika confidence cukup
+        st.markdown("### 🔝 Top-3 Prediksi")
+        top_probs, top_idxs = torch.topk(probabilities, 3)
+
+        for i in range(3):
+            st.write(
+                f"{i+1}. **{class_names[top_idxs[0][i]]}** "
+                f"({top_probs[0][i].item() * 100:.2f}%)"
+            )
+
     else:
 
-        st.warning("⚠️ Model memiliki tingkat keyakinan rendah.")
-        st.error(f"Prediksi sementara: {predicted_class}")
-        st.info(f"Confidence rendah: {confidence_score * 100:.2f}%")
+        st.error("❌ Tidak dapat memberikan hasil prediksi.")
+
+        st.markdown("### ⚠️ Alasan")
+        st.write(
+            "Model tidak memiliki tingkat keyakinan yang cukup tinggi "
+            "untuk menetapkan satu kelas tertentu. "
+            "Hal ini dapat terjadi karena kualitas gambar kurang baik, "
+            "pencahayaan tidak optimal, atau pola citra tidak cukup jelas "
+            "berdasarkan data pelatihan model."
+        )
 
         st.markdown("### 🔍 Rekomendasi")
         st.write(
-            "Hasil prediksi tidak cukup meyakinkan. "
-            "Disarankan untuk evaluasi lanjutan oleh dokter spesialis."
-        )
-
-    # =====================================================
-    # TOP 3
-    # =====================================================
-    st.markdown("### 🔝 Top-3 Prediksi")
-
-    top_probs, top_idxs = torch.topk(probabilities, 3)
-
-    for i in range(3):
-        st.write(
-            f"{i+1}. **{class_names[top_idxs[0][i]]}** "
-            f"({top_probs[0][i].item() * 100:.2f}%)"
+            "Disarankan untuk menggunakan gambar dengan kualitas lebih baik "
+            "atau melakukan evaluasi langsung oleh dokter spesialis."
         )
 
     # =====================================================
@@ -172,7 +176,7 @@ if uploaded_file is not None:
     # =====================================================
     st.warning(
         "⚠️ Sistem ini merupakan alat bantu berbasis kecerdasan buatan "
-        "dan tidak menggantikan diagnosis klinis oleh tenaga medis profesional."
+        "dan tidak menggantikan diagnosis klinis profesional."
     )
 
 # =========================================================
